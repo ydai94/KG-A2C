@@ -86,7 +86,7 @@ clockwork_forest_path	84
 looking_clasp	85
 ramparts_of_flathead_mountains	86
 pile	87
-west_of_white_house_with_boarded_front_door	88
+West_of_House	88
 chirping_of_song_bird	89
 brass_lantern_(providing_light)	90
 exit_to_up	91
@@ -357,6 +357,6 @@ cavern	355
 trees_in_directions	356
 wooden	357
 unconscious_troll	358
-open	359
+open_field	359
 only_exit	360
 large_egg	361

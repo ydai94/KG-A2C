@@ -42,7 +42,7 @@ class PackedEncoderRNN(nn.Module):
         # Pack the padded batch of sequences
         lengths = torch.tensor([torch.nonzero(n)[-1] + 1 for n in input], dtype=torch.long).cuda()#, device=device)
 
-        packed = nn.utils.rnn.pack_padded_sequence(embedded, lengths, enforce_sorted=False)
+        packed = nn.utils.rnn.pack_padded_sequence(embedded, lengths.cpu(), enforce_sorted=False)
         output, hidden = self.gru(packed, hidden)
         # Unpack the padded sequence
         output, _ = nn.utils.rnn.pad_packed_sequence(output)

@@ -46,13 +46,13 @@ class KGA2CTrainer(object):
         configure_logger(params['output_dir'])
         log('Parameters {}'.format(params))
         self.params = params
-        self.binding = load_bindings(params['rom_file_path'])
-        self.max_word_length = self.binding['max_word_length']
         self.sp = spm.SentencePieceProcessor()
         self.sp.Load(params['spm_file'])
         kg_env = KGA2CEnv(params['rom_file_path'], params['seed'], self.sp,
                           params['tsv_file'], step_limit=params['reset_steps'],
                           stuck_steps=params['stuck_steps'], gat=params['gat'])
+        self.binding = jericho.FrotzEnv(params['rom_file_path'], params['seed']).bindings
+        self.max_word_length = self.binding['max_word_length']
         self.vec_env = VecEnv(params['batch_size'], kg_env, params['openie_path'])
         self.template_generator = TemplateActionGenerator(self.binding)
         env = FrotzEnv(params['rom_file_path'])
@@ -80,6 +80,7 @@ class KGA2CTrainer(object):
         '''
         tmpl_target = []
         obj_targets = []
+        print(admissible)
         for adm in admissible:
             obj_t = set()
             cur_t = [0] * len(self.template_generator.templates)

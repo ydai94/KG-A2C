@@ -88,7 +88,6 @@ class StateAction(object):
 
         in_rl = []
         in_flag = False
-
         for i, ov in enumerate(sents):
             sent = ' '.join([a['word'] for a in ov['tokens']])
             triple = ov['openie']
@@ -216,9 +215,7 @@ class StateAction(object):
 
     def step(self, visible_state, inventory_state, objs, prev_action=None, cache=None, gat=True):
         ret, ret_cache = self.update_state(visible_state, inventory_state, objs, prev_action, cache)
-
         self.pruned_actions_rep = [self.get_action_rep_drqa(a) for a in self.vis_pruned_actions]
-
         inter = self.visible_state #+ "The actions are:" + ",".join(self.vis_pruned_actions) + "."
         self.drqa_input = self.get_visible_state_rep_drqa(inter)
 

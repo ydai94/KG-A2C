@@ -145,19 +145,21 @@ class TensorBoardOutputFormat(KVWriter):
         prefix = 'events'
         path = osp.join(osp.abspath(dir), prefix)
         import tensorflow as tf
-        from tensorflow.python import pywrap_tensorflow
+        from tensorflow.python.client import _pywrap_events_writer
         from tensorflow.core.util import event_pb2
         from tensorflow.python.util import compat
+        from tensorflow.core.framework import summary_pb2
         self.tf = tf
+        self.spb = summary_pb2
         self.event_pb2 = event_pb2
-        self.pywrap_tensorflow = pywrap_tensorflow
-        self.writer = pywrap_tensorflow.EventsWriter(compat.as_bytes(path))
+        self.pywrap_tensorflow = _pywrap_events_writer
+        self.writer = _pywrap_events_writer.EventsWriter(compat.as_bytes(path))
 
     def writekvs(self, kvs):
         def summary_val(k, v):
             kwargs = {'tag': k, 'simple_value': float(v)}
-            return self.tf.Summary.Value(**kwargs)
-        summary = self.tf.Summary(value=[summary_val(k, v) for k, v in kvs.items()])
+            return self.spb.Summary.Value(**kwargs)
+        summary = self.spb.Summary(value=[summary_val(k, v) for k, v in kvs.items()])
         event = self.event_pb2.Event(wall_time=time.time(), summary=summary)
         event.step = self.step # is there any reason why you'd want to specify the step?
         self.writer.WriteEvent(event)

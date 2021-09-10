@@ -50,12 +50,11 @@ class KGA2CEnv:
         self.vocab_rev       = None
         self.state_rep       = None
 
-
     def create(self):
         ''' Create the Jericho environment and connect to redis. '''
         self.env = jericho.FrotzEnv(self.rom_path, self.seed)
-        self.bindings = jericho.load_bindings(self.rom_path)
-        self.act_gen = TemplateActionGenerator(self.bindings)
+        self.bindings = self.env.bindings
+        self.act_gen = self.env.act_gen
         self.max_word_len = self.bindings['max_word_length']
         self.vocab, self.vocab_rev = load_vocab(self.env)
         self.conn_valid = redis.Redis(host='localhost', port=6379, db=0)
@@ -69,7 +68,12 @@ class KGA2CEnv:
         admissible = self.conn_valid.get(world_state_hash)
         if admissible is None:
             possible_acts = self.act_gen.generate_template_actions(objs, obj_ids)
-            admissible = self.env.find_valid_actions(possible_acts)
+            admissible = []
+            true_actions = self.env.get_valid_actions()
+            for temp_list in self.env._filter_candidate_actions(possible_acts).values():
+                for template in temp_list:
+                    if template.action in true_actions:
+                        admissible.append(template)
             redis_valid_value = '/'.join([str(a) for a in admissible])
             self.conn_valid.set(world_state_hash, redis_valid_value)
         else:
@@ -82,18 +86,21 @@ class KGA2CEnv:
 
     def _build_graph_rep(self, action, ob_r):
         ''' Returns various graph-based representations of the current state. '''
-        objs = [o[0] for o in self.env.identify_interactive_objects(ob_r)]
-        objs.append('all')
+        #objs = [o[0] for o in self.env._identify_interactive_objects(ob_r)]
+        objs = []
+        for inter_objs in self.env._identify_interactive_objects().values():
+            for obj in inter_objs:
+                objs.append(obj[0])
         admissible_actions = self._get_admissible_actions(objs)
         admissible_actions_rep = [self.state_rep.get_action_rep_drqa(a.action) \
                                   for a in admissible_actions] \
                                       if admissible_actions else [[0] * 20]
         try: # Gather additional information about the new state
-            save_str = self.env.save_str()
+            save_state = self.env.get_state()
             ob_l = self.env.step('look')[0]
-            self.env.load_str(save_str)
+            self.env.set_state(save_state)
             ob_i = self.env.step('inventory')[0]
-            self.env.load_str(save_str)
+            self.env.set_state(save_state)
         except RuntimeError:
             print('RuntimeError: {}, Done: {}, Info: {}'.format(clean_obs(ob_r), done, info))
             ob_l = ob_i = ''
@@ -111,12 +118,13 @@ class KGA2CEnv:
         action_rep = self.state_rep.get_action_rep_drqa(action)
         return GraphInfo(objs, ob_rep, action_rep, graph_state, graph_state_rep,\
                          admissible_actions, admissible_actions_rep)
+                         
 
 
     def step(self, action):
         self.episode_steps += 1
         obs, reward, done, info = self.env.step(action)
-        info['valid'] = self.env.world_changed() or done
+        info['valid'] = self.env._world_changed() or done
         info['steps'] = self.episode_steps
         if info['valid']:
             self.valid_steps += 1

@@ -13,7 +13,7 @@ def start_openie(install_path):
     print('Starting OpenIE from', install_path)
     subprocess.Popen(['java', '-mx8g', '-cp', '*', \
                       'edu.stanford.nlp.pipeline.StanfordCoreNLPServer', \
-                      '-port', '9000', '-timeout', '15000', '-quiet'], cwd=install_path)
+                      '-port', '9001', '-timeout', '15000', '-quiet'], cwd=install_path)
     time.sleep(1)
 
 
