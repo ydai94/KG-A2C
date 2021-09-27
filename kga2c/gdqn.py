@@ -51,12 +51,13 @@ class KGA2CTrainer(object):
         kg_env = KGA2CEnv(params['rom_file_path'], params['seed'], self.sp,
                           params['tsv_file'], step_limit=params['reset_steps'],
                           stuck_steps=params['stuck_steps'], gat=params['gat'])
-        self.binding = jericho.FrotzEnv(params['rom_file_path'], params['seed']).bindings
+        jw = JeriWorld(params['rom_file_path'], params['seed'])
+        self.binding = jw.bindings
         self.max_word_length = self.binding['max_word_length']
         self.vec_env = VecEnv(params['batch_size'], kg_env, params['openie_path'])
         self.template_generator = TemplateActionGenerator(self.binding)
-        env = FrotzEnv(params['rom_file_path'])
-        self.vocab_act, self.vocab_act_rev = load_vocab(env)
+        self.vocab_act, self.vocab_act_rev = load_vocab(jw)
+        del jw
         self.model = KGA2C(params, self.template_generator.templates, self.max_word_length,
                            self.vocab_act, self.vocab_act_rev, len(self.sp), gat=self.params['gat']).cuda()
         self.batch_size = params['batch_size']
