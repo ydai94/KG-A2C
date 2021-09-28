@@ -314,31 +314,32 @@ class JeriWorld:
             return objs_set
         return self._env._identify_interactive_objects(observation=observation, use_object_tree=use_object_tree)
 
-    def find_valid_actions(self):
-        diff2acts = {}
-        state = self.get_state()
-        candidate_actions = self.get_valid_actions()
-        for act in candidate_actions:
+    def find_valid_actions(self, possible_acts=None):
+        if self.tw_games:
+            diff2acts = {}
+            state = self.get_state()
+            candidate_actions = self.get_valid_actions()
+            for act in candidate_actions:
+                self.set_state(state)
+                self.step(act)
+                diff = self._env._jericho._get_world_diff()
+                if diff in diff2acts:
+                    if act not in diff2acts[diff]:
+                        diff2acts[diff].append(act)
+                else:
+                    diff2acts[diff] = [act]
             self.set_state(state)
-            self.step(act)
-            diff = self._env._jericho._get_world_diff()
-            if diff in diff2acts:
-                if act not in diff2acts[diff]:
-                    diff2acts[diff].append(act)
-            else:
-                diff2acts[diff] = [act]
-        self.set_state(state)
-        return diff2acts
+            return diff2acts
+        else:
+            admissible = []
+            candidate_acts = self._env._filter_candidate_actions(possible_acts).values()
+            true_actions = self._env.get_valid_actions()
+            for temp_list in candidate_acts:
+                for template in temp_list:
+                    if template.action in true_actions:
+                        admissible.append(template)
+            return admissible
 
-    def find_valid_actions(self, possible_acts):
-        admissible = []
-        candidate_acts = self._env._filter_candidate_actions(possible_acts).values()
-        true_actions = self._env.get_valid_actions()
-        for temp_list in candidate_acts:
-            for template in temp_list:
-                if template.action in true_actions:
-                    admissible.append(template)
-        return admissible
 
     def _score_object_names(self, interactive_objs):
         """ Attempts to choose a sensible name for an object, typically a noun. """
@@ -364,7 +365,6 @@ class JeriWorld:
             return None
         else:
             return self._env.get_world_state_hash()
-
 class KGA2CEnv:
     '''
 
